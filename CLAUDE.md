@@ -1,0 +1,76 @@
+# Agent Rules — Agentic Full-Stack Starter
+
+Stack: Next.js (App Router, `src/`), TypeScript (strict), Tailwind CSS v4, shadcn/ui (Radix), Zod, react-hook-form, Vitest + Testing Library. Import alias: `@/*` → `src/*`.
+
+@AGENTS.md
+
+These rules are mandatory. If a rule conflicts with an explicit user instruction, follow the user and say so.
+
+---
+
+## 1. Superpowers & Terminal discipline
+
+- **Look before you touch.** Before editing, run `git status` and `git diff` to see the current state, then read every file you plan to change (and its imports/callers). Never edit a file you haven't read in this session.
+- **Don't clobber user work.** If the tree has uncommitted changes you didn't make, leave them alone and mention them.
+- **Small, verifiable steps.** Plan → change one thing → verify → continue. Prefer editing existing files over creating new ones.
+- **Fix the build yourself.** After changes, run `npm run check` (lint → typecheck → test → build). If anything fails, read the full error, find the root cause, fix it, and re-run until green. Do not hand back a broken build, and never silence errors with `// @ts-ignore`, `any`, `eslint-disable`, or skipped tests.
+- **Evidence over claims.** Only say "done" / "passing" after you've run the command and seen the output.
+- **Commits:** small, focused, Conventional Commits (`feat:`, `fix:`, `refactor:`, `test:`, `chore:`, `docs:`). Never commit `.env*` files, build output, or `node_modules`.
+
+## 2. UI Craftsmanship (Impeccable)
+
+- **Visual hierarchy first.** One clear primary action per view; size, weight and color guide the eye (title → key content → secondary actions). Use the spacing scale consistently; don't eyeball random values.
+- **Every data-driven UI handles all states:**
+  - **Loading** — `loading.tsx`, `<Suspense>` boundaries, skeletons, or a pending button (`useTransition` / `useFormStatus`). No layout jump when data arrives.
+  - **Empty** — a helpful message + a next action, never a blank area.
+  - **Error** — `error.tsx` / `not-found.tsx` per route segment, inline form errors, toasts for async results. Messages say what happened and what to do.
+  - **Responsive** — mobile-first; check ~375px, tablet and desktop. No horizontal scroll, touch targets ≥ 40px.
+- **Accessible by default:** semantic HTML, labels on every input, visible focus states, `aria-hidden` on decorative icons, sufficient contrast, keyboard-operable everything.
+- **Use theme tokens** (`bg-background`, `text-muted-foreground`, `border`, `ring`…) — no hard-coded hex colors. Dark mode must keep working.
+- **No boilerplate bloat.** No placeholder lorem sections, no unused wrappers, no speculative props or abstractions "for later".
+
+## 3. shadcn/ui & Radix
+
+- **Don't reinvent the wheel.** Before building a component, check `src/components/ui/`. Need a new one? Add it with `npx shadcn@latest add <name>` instead of hand-writing a dialog, menu, select, etc.
+- Files in `src/components/ui/` are owned primitives: extend via variants (`cva`) or wrap them in `src/components/` — keep the originals clean.
+- **Always merge classes with `cn()`** from `@/lib/utils`. Never concatenate class strings manually; accept and forward `className`.
+- **Compose with `asChild`**: render links/custom elements as triggers or buttons (`<Button asChild><Link href="…" /></Button>`) instead of nesting interactive elements (no `<button>` inside `<a>`).
+- Toasts use **sonner** (`import { toast } from "sonner"`); `<Toaster />` is already mounted in the root layout.
+- Forms use **react-hook-form + `zodResolver` + shadcn `Form`** components.
+
+## 4. React / Next.js best practices
+
+- **Server Components first.** Every component is a Server Component unless it needs state, effects, event handlers or browser APIs.
+- **Push `'use client'` to the leaves.** Keep client components small; pass Server Components as `children` instead of making whole pages client-side. Never put `'use client'` on a layout or page just to make one button work.
+- **No `useEffect` for data fetching.** Fetch on the server (async Server Components, `fetch` with caching, Server Actions for mutations). For client-side server state, use a dedicated library (e.g. TanStack Query) — never `useEffect` + `useState` + `fetch`.
+- Avoid `useEffect` for derived state — compute it during render.
+- **Mutations = Server Actions** (`"use server"`), revalidate with `revalidatePath` / `revalidateTag` / `updateTag` as appropriate.
+- **Structure:** feature code in `src/features/<feature>/{components,actions,lib}`; shared UI in `src/components`; shared utilities/schemas in `src/lib`. Features don't import from each other — share through `src/lib` or `src/components`.
+- This Next.js version may differ from your training data. Check `node_modules/next/dist/docs/` before using an API you're not sure about, and heed deprecation warnings.
+- TypeScript strict: no `any`; infer types from Zod schemas (`z.infer`) instead of duplicating them.
+
+## 5. Testing & Security
+
+- **Test user behavior, not implementation.** Use Testing Library queries by role/label/text (`getByRole`, `getByLabelText`), drive interactions with `userEvent`, assert on what the user sees. No snapshot-only tests, no testing internal state or class names.
+- Every new feature or bug fix ships with tests (`*.test.tsx` next to the code). Run `npm test` before finishing.
+- **Validate every input with Zod** at every trust boundary: Server Actions, Route Handlers, search params, env vars, external API responses. Re-validate on the server even if the client already did.
+- **Never leak secrets.**
+  - Secrets live only in `.env.local` (git-ignored); document variable names in `.env.example` with empty values.
+  - Only `NEXT_PUBLIC_*` vars reach the browser — never put secrets there.
+  - Never log, return or render secrets, tokens, or full error objects/stack traces to the client.
+  - Never hard-code keys, passwords or tokens in source, tests or commits. If you find one, stop and tell the user.
+- Treat all user input as untrusted: no `dangerouslySetInnerHTML` with user data, parameterized DB queries only, check auth/authorization inside every Server Action (they are public endpoints).
+
+---
+
+## Commands
+
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start dev server |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm test` | Vitest (run once) |
+| `npm run test:watch` | Vitest watch mode |
+| `npm run build` | Production build |
+| `npm run check` | All of the above — must pass before finishing a task |
